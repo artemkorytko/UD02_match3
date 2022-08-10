@@ -1,0 +1,84 @@
+using UnityEngine;
+using Zenject;
+
+public class Element : MonoBehaviour
+{
+    public class Factory : PlaceholderFactory<ElementPosition, ElementConfigItem, Element>
+    {
+        
+    }
+
+    [SerializeField] private SpriteRenderer backgroundSpriteRenderer;
+    [SerializeField] private SpriteRenderer iconSpriteRenderer;
+        
+    private Vector2 _localPosition;
+    private Vector2 _gridPosition;
+    private ElementConfigItem _elementConfigItem;
+    private SignalBus _signalBus;
+
+    public string Key => _elementConfigItem.Key;
+    public Vector2 GridPosition => _gridPosition;
+    public bool IsActive { get; private set; }
+    public bool IsInitialized { get; private set; }
+    
+    [Inject]
+    public void Construct(ElementPosition elementPosition, ElementConfigItem elementConfigItem, SignalBus signalBus)
+    {
+        _localPosition = elementPosition.LocalPosition;
+        _gridPosition = elementPosition.GridPosition;
+        _signalBus = signalBus;
+        _elementConfigItem = elementConfigItem;
+    }
+
+    private void Start()
+    {
+        Initialize();
+    }
+
+    private void Initialize()
+    {
+        SetConfig();
+        SetLocalPosition();
+        Enable();
+    }
+
+    private void SetConfig()
+    {
+        iconSpriteRenderer.sprite = _elementConfigItem.Sprite;
+    }
+    
+    private void SetLocalPosition()
+    {
+        transform.localPosition = _localPosition;
+    }
+    
+    private void Enable()
+    {
+        gameObject.SetActive(true);
+        SetSelected(false);
+        //TODO animation DoTween
+        IsActive = true;
+        IsInitialized = true;
+    }
+
+    public void Disable()
+    {
+        //TODO animation 
+        gameObject.SetActive(false);
+    }
+
+    public void SetSelected(bool isOn)
+    {
+        backgroundSpriteRenderer.enabled = isOn;
+    }
+
+    private void OnMouseUpAsButton()
+    {
+        OnClick();
+    }
+
+    public void OnClick()
+    {
+        _signalBus.Fire(new OnElementClickSignal(this));
+    }
+}
