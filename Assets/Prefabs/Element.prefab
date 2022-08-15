@@ -157,6 +157,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cc1cc15e1b3b9cb4e88234a87aea55cc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  backgroundSpriteRenderer: {fileID: 8801451130457711845}
+  iconSpriteRenderer: {fileID: 8801451129348658802}
 --- !u!1 &8801451130457711847
 GameObject:
   m_ObjectHideFlags: 0

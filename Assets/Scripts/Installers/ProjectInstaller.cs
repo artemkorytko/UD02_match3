@@ -1,3 +1,4 @@
+using Signals;
 using Zenject;
 
 public class ProjectInstaller : MonoInstaller
@@ -6,7 +7,6 @@ public class ProjectInstaller : MonoInstaller
     {
         SignalBusInstaller.Install(Container);
         Container.Bind<SaveSystem>().AsSingle().NonLazy();
-        Container.BindInterfacesAndSelfTo<GameManager>().AsSingle().NonLazy();
         BindSignals();
     }
 
@@ -17,5 +17,7 @@ public class ProjectInstaller : MonoInstaller
         Container.DeclareSignal<ScoreChangedSignal>();
         Container.DeclareSignal<RestartGameSignal>();
         Container.DeclareSignal<AddScoreSignal>();
+        Container.DeclareSignal<OnBoardMatchSignal>();
+        Container.DeclareSignal<OnBoardClosedSignal>();
     }
 }

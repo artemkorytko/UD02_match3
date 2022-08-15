@@ -1,3 +1,4 @@
+using Configs.Board;
 using UnityEngine;
 using Zenject;
 
@@ -5,9 +6,11 @@ using Zenject;
 public class GameSceneConfigInstaller : ScriptableObjectInstaller<GameSceneConfigInstaller>
 {
     [SerializeField] private ElementsConfig elementsConfig;
+    [SerializeField] private BoardConfig boardConfig;
     
     public override void InstallBindings()
     {
         Container.BindInstance(elementsConfig);
+        Container.BindInstance(boardConfig);
     }
 }

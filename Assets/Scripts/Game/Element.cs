@@ -13,29 +13,26 @@ public class Element : MonoBehaviour
         
     private Vector2 _localPosition;
     private Vector2 _gridPosition;
-    private ElementConfigItem _elementConfigItem;
+    private ElementConfigItem _configItem;
     private SignalBus _signalBus;
 
-    public string Key => _elementConfigItem.Key;
+    public string Key => _configItem.Key;
     public Vector2 GridPosition => _gridPosition;
     public bool IsActive { get; private set; }
     public bool IsInitialized { get; private set; }
-    
+
+    public ElementConfigItem ConfigItem => _configItem;
+
     [Inject]
     public void Construct(ElementPosition elementPosition, ElementConfigItem elementConfigItem, SignalBus signalBus)
     {
         _localPosition = elementPosition.LocalPosition;
         _gridPosition = elementPosition.GridPosition;
         _signalBus = signalBus;
-        _elementConfigItem = elementConfigItem;
+        _configItem = elementConfigItem;
     }
 
-    private void Start()
-    {
-        Initialize();
-    }
-
-    private void Initialize()
+    public void Initialize()
     {
         SetConfig();
         SetLocalPosition();
@@ -44,7 +41,7 @@ public class Element : MonoBehaviour
 
     private void SetConfig()
     {
-        iconSpriteRenderer.sprite = _elementConfigItem.Sprite;
+        iconSpriteRenderer.sprite = _configItem.Sprite;
     }
     
     private void SetLocalPosition()

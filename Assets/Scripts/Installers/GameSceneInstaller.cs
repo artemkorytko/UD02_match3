@@ -1,3 +1,4 @@
+using Game;
 using UnityEngine;
 using Zenject;
 
@@ -9,5 +10,7 @@ public class GameSceneInstaller : MonoInstaller
     {
         Container.BindFactory<ElementPosition, ElementConfigItem, Element, Element.Factory>().FromComponentInNewPrefab(elementPrefab);
         Container.BindInstance(scoreView);
+        Container.BindInterfacesAndSelfTo<GameManager>().AsSingle().NonLazy();
+        Container.Bind<BoardController>().AsSingle().NonLazy();
     }
 }
