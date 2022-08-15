@@ -14,7 +14,6 @@ namespace Game.Managers
         public void Initialize() //аналог метода старт
         {
             _saveSystem.Initialize();
-            Debug.Log("here");
         }
     }
 }
