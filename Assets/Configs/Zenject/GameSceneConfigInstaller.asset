@@ -13,3 +13,4 @@ MonoBehaviour:
   m_Name: GameSceneConfigInstaller
   m_EditorClassIdentifier: 
   elementsConfig: {fileID: 11400000, guid: 6649a7db4454b4a8791dd043cd3bc434, type: 2}
+  boardConfig: {fileID: 11400000, guid: e8bf6c9c271c74629be8978983a06217, type: 2}
