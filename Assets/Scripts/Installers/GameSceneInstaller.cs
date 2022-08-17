@@ -7,15 +7,16 @@ public class GameSceneInstaller : MonoInstaller
 {
     [SerializeField] private Element elementPrefab;
     [SerializeField] private GameObject ui;
+
     public override void InstallBindings()
     {
         BindSignals();
         Container.BindInstance(ui);
         Container.BindFactory<ElementPosition, ElementConfigItem, Element, Element.Factory>().FromComponentInNewPrefab(elementPrefab);
-        Container.Bind<BoardController>().AsSingle().NonLazy();
+        Container.BindInterfacesAndSelfTo<BoardController>().AsSingle().NonLazy();
         Container.BindInterfacesAndSelfTo<GameManager>().AsSingle().NonLazy();
     }
-    
+
     private void BindSignals()
     {
         Container.DeclareSignal<CreateGameSignal>();
