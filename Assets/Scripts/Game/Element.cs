@@ -44,12 +44,23 @@ public class Element : MonoBehaviour
         iconSpriteRenderer.sprite = _configItem.Sprite;
     }
     
+    public void SetConfig(ElementConfigItem element)
+    {
+        iconSpriteRenderer.sprite = element.Sprite;
+    }
+    
     private void SetLocalPosition()
     {
         transform.localPosition = _localPosition;
     }
     
-    private void Enable()
+    public void SetLocalPosition(Vector2 newLocalPosition, Vector2 gridPosition)
+    {
+        transform.localPosition = newLocalPosition;
+        _gridPosition = gridPosition;
+    }
+    
+    public void Enable()
     {
         gameObject.SetActive(true);
         SetSelected(false);
@@ -62,6 +73,7 @@ public class Element : MonoBehaviour
     {
         //TODO animation 
         gameObject.SetActive(false);
+        // CHECK !!!
     }
 
     public void SetSelected(bool isOn)
@@ -77,5 +89,10 @@ public class Element : MonoBehaviour
     public void OnClick()
     {
         _signalBus.Fire(new OnElementClickSignal(this));
+    }
+
+    public void DestroySelf()
+    {
+        Destroy(gameObject);
     }
 }
