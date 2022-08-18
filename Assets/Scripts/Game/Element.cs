@@ -97,6 +97,7 @@ public class Element : MonoBehaviour
 
     public void SetConfig(ElementConfigItem elements)
     {
+        _configItem = elements;
         iconSpriteRenderer.sprite = elements.Sprite;
     }
 }

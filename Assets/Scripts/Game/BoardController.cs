@@ -204,7 +204,7 @@ namespace Game
                 if (elementsForCollecting.Count > 0)
                 {
                     DisableElements(elementsForCollecting);
-                  //  _signalBus.Fire(new OnBoardMatchSignal(elementsForCollecting.Count));
+                   _signalBus.Fire(new OnBoardMatchSignal(elementsForCollecting.Count));
                     NormalizeBoard();
                     isNeedRecheck = true;
                 }
@@ -225,8 +225,9 @@ namespace Game
                 {
                     if (_elements[x, y].IsActive && !elementsForCollecting.Contains(_elements[x, y]))
                     {
+                        List<Element> checkResult;
                         bool needAddFirst = false;
-                        List<Element> checkResult = CheckHorizontal(x, y);
+                        checkResult = CheckHorizontal(x, y);
                         if (checkResult != null && checkResult.Count >= 2)
                         {
                             needAddFirst = true;
