@@ -1,417 +1,414 @@
 ﻿using System;
 using System.Collections.Generic;
-using Configs.Board;
 using UnityEngine;
 using Zenject;
 using Random = UnityEngine.Random;
 
-namespace Game
+public class BoardController : IDisposable
 {
-    public class BoardController : IDisposable
+    private readonly BoardConfig _boardConfig;
+    private readonly ElementsConfig _elementsConfig;
+    private readonly Element.Factory _factory;
+    private readonly SignalBus _signalBus;
+
+    private Element[,] _elements;
+    private Element _firstSelected;
+    private bool _isBlocked;
+
+    public BoardController(BoardConfig boardConfig, ElementsConfig elementsConfig, Element.Factory factory, SignalBus signalBus)
     {
-        private readonly BoardConfig _boardConfig;
-        private readonly ElementsConfig _elementsConfig;
-        private readonly Element.Factory _factory;
-        private readonly SignalBus _signalBus;
-
-        private Element[,] _elements;
-        private Element _firstSelected;
-        private bool _isBlocked;
-
-        public BoardController(BoardConfig boardConfig, ElementsConfig elementsConfig, Element.Factory factory, SignalBus signalBus)
+        _boardConfig = boardConfig;
+        _elementsConfig = elementsConfig;
+        _factory = factory;
+        _signalBus = signalBus;
+    }
+    
+    public void Initialize(string[] dataBoardState = null)
+    {
+        if (dataBoardState == null)
         {
-            _boardConfig = boardConfig;
-            _elementsConfig = elementsConfig;
-            _factory = factory;
-            _signalBus = signalBus;
-        }
-        
-        public void Initialize(string[] dataBoardState = null)
-        {
-            if (dataBoardState == null)
-            {
-                GenerateElements();
-            }
-            else
-            {
-                LoadElements(dataBoardState);
-            }
-            
-            _signalBus.Subscribe<OnElementClickSignal>(OnElementClick);
-        }
-        
-        public void Dispose()
-        {
-            _signalBus.Unsubscribe<OnElementClickSignal>(OnElementClick);
-        }
-
-        public string[] GetBoardState()
-        {
-            var array = new string[_boardConfig.SizeY * _boardConfig.SizeX];
-            var row = _boardConfig.SizeX;
-            var columns = _boardConfig.SizeY;
-            var index = 0;
-            
-            for (int y = 0; y < columns; y++)
-            {
-                for (int x = 0; x < row; x++)
-                {
-                    array[index++] = _elements[x, y].Key;
-                }
-            }
-
-            return array;
-        }
-
-        public void Restart()
-        {
-            var row = _boardConfig.SizeX;
-            var columns = _boardConfig.SizeY;
-
-            for (int y = 0; y < columns; y++)
-            {
-                for (int x = 0; x < row; x++)
-                {
-                    _elements[x, y].DestroySelf();
-                }
-            }
-
-            _elements = null;
             GenerateElements();
         }
-
-        private void GenerateElements()
+        else
         {
-            var row = _boardConfig.SizeX;
-            var column = _boardConfig.SizeY;
-            var elementOffset = _boardConfig.ElementOffset;
-            var startPosition = new Vector2(-elementOffset * row * 0.5f + elementOffset * 0.5f,
-                                             elementOffset * column * 0.5f - elementOffset * 0.5f);
-            _elements = new Element[row, column];
-            
-            for (int y = 0; y < column; y++)
-            {
-                for (int x = 0; x < row; x++)
-                {
-                    var position = startPosition + new Vector2(elementOffset * x, -elementOffset * y);
-                    var element = _factory.Create(new ElementPosition(position, new Vector2(x, y)),
-                        GetPossibleElement(x, y, row, column));
-                    element.Initialize();
-                    _elements[x, y] = element;
-                }
-                
-            }            
+            LoadElements(dataBoardState);
         }
         
-        private void LoadElements(string[] dataBoardState)
-        {
-            var row = _boardConfig.SizeX;
-            var column = _boardConfig.SizeY;
-            var elementOffset = _boardConfig.ElementOffset;
-            
-            _elements = new Element[row, column];
-            var startPosition = new Vector2(-elementOffset * row * 0.5f + elementOffset * 0.5f,
-                elementOffset * column * 0.5f - elementOffset * 0.5f);
+        _signalBus.Subscribe<OnElementClickSignal>(OnElementClick);
+    }
+    
+    public void Dispose()
+    {
+        _signalBus.Unsubscribe<OnElementClickSignal>(OnElementClick);
+    }
 
-            for (int i = 0; i < dataBoardState.Length; i++)
+    public string[] GetBoardState()
+    {
+        var array = new string[_boardConfig.SizeY * _boardConfig.SizeX];
+        var row = _boardConfig.SizeX;
+        var columns = _boardConfig.SizeY;
+        var index = 0;
+        
+        for (int y = 0; y < columns; y++)
+        {
+            for (int x = 0; x < row; x++)
             {
-                int y = i / _boardConfig.SizeX;
-                int x = i % _boardConfig.SizeX;
+                array[index++] = _elements[x, y].Key;
+            }
+        }
+
+        return array;
+    }
+
+    public void Restart()
+    {
+        var row = _boardConfig.SizeX;
+        var columns = _boardConfig.SizeY;
+
+        for (int y = 0; y < columns; y++)
+        {
+            for (int x = 0; x < row; x++)
+            {
+                _elements[x, y].DestroySelf();
+            }
+        }
+
+        _elements = null;
+        GenerateElements();
+    }
+
+    private void GenerateElements()
+    {
+        var row = _boardConfig.SizeX;
+        var column = _boardConfig.SizeY;
+        var elementOffset = _boardConfig.ElementOffset;
+        var startPosition = new Vector2(-elementOffset * row * 0.5f + elementOffset * 0.5f,
+                                         elementOffset * column * 0.5f - elementOffset * 0.5f);
+        _elements = new Element[row, column];
+        
+        for (int y = 0; y < column; y++)
+        {
+            for (int x = 0; x < row; x++)
+            {
                 var position = startPosition + new Vector2(elementOffset * x, -elementOffset * y);
-                var element = _factory.Create(new ElementPosition(position, new Vector2(y, x)),
-                    _elementsConfig.GetByKey(dataBoardState[i]));
+                var element = _factory.Create(new ElementPosition(position, new Vector2(x, y)),
+                    GetPossibleElement(x, y, row, column));
                 element.Initialize();
                 _elements[x, y] = element;
             }
-        }
-
-        private ElementConfigItem GetPossibleElement(int row, int column, int rowCount, int columnCount)
-        {
-            var tempList = new List<ElementConfigItem>(_elementsConfig.ConfigItem);
-
-            int x = row;
-            int y = column - 1;
-
-            if (x >= 0 && x < rowCount && y >= 0 && y < columnCount)
-            {
-                if (_elements[x, y].IsInitialized)
-                {
-                    tempList.Remove(_elements[x, y].ConfigItem);
-                }
-            }
-
-            x = row - 1;
-            y = column;
-
-            if (x >= 0 && x < rowCount && y >= 0 && y < columnCount)
-            {
-                if (_elements[y, x].IsInitialized)
-                {
-                    tempList.Remove(_elements[x, y].ConfigItem);
-                }                
-            }
             
-            return tempList[Random.Range(0, tempList.Count)];
+        }            
+    }
+    
+    private void LoadElements(string[] dataBoardState)
+    {
+        var row = _boardConfig.SizeX;
+        var column = _boardConfig.SizeY;
+        var elementOffset = _boardConfig.ElementOffset;
+        
+        _elements = new Element[row, column];
+        var startPosition = new Vector2(-elementOffset * row * 0.5f + elementOffset * 0.5f,
+            elementOffset * column * 0.5f - elementOffset * 0.5f);
+
+        for (int i = 0; i < dataBoardState.Length; i++)
+        {
+            int y = i / _boardConfig.SizeX;
+            int x = i % _boardConfig.SizeX;
+            var position = startPosition + new Vector2(elementOffset * x, -elementOffset * y);
+            var element = _factory.Create(new ElementPosition(position, new Vector2(y, x)),
+                _elementsConfig.GetByKey(dataBoardState[i]));
+            element.Initialize();
+            _elements[x, y] = element;
+        }
+    }
+
+    private ElementConfigItem GetPossibleElement(int row, int column, int rowCount, int columnCount)
+    {
+        var tempList = new List<ElementConfigItem>(_elementsConfig.ConfigItem);
+
+        int x = row;
+        int y = column - 1;
+
+        if (x >= 0 && x < rowCount && y >= 0 && y < columnCount)
+        {
+            if (_elements[x, y].IsInitialized)
+            {
+                tempList.Remove(_elements[x, y].ConfigItem);
+            }
         }
 
-        private void OnElementClick(OnElementClickSignal signal)
-        {
-            if (_isBlocked) return;
+        x = row - 1;
+        y = column;
 
-            var element = signal.Element;
-            if (_firstSelected == null)
+        if (x >= 0 && x < rowCount && y >= 0 && y < columnCount)
+        {
+            if (_elements[x, y].IsInitialized)
             {
-                _firstSelected = element;
-                element.SetSelected(true);
+                tempList.Remove(_elements[x, y].ConfigItem);
+            }                
+        }
+        
+        return tempList[Random.Range(0, tempList.Count)];
+    }
+
+    private void OnElementClick(OnElementClickSignal signal)
+    {
+        if (_isBlocked) return;
+
+        var element = signal.Element;
+        if (_firstSelected == null)
+        {
+            _firstSelected = element;
+            element.SetSelected(true);
+        }
+        else
+        {
+            if (IsCanSwap(_firstSelected, element))
+            {
+                _firstSelected.SetSelected(false);
+                Swap(_firstSelected, element);
+                _firstSelected = null;
+                // ждать пока проиграется эффект
+                CheckBoard();
             }
             else
             {
-                if (IsCanSwap(_firstSelected, element))
+                if (_firstSelected == element)
                 {
                     _firstSelected.SetSelected(false);
-                    Swap(_firstSelected, element);
                     _firstSelected = null;
-                    // ждать пока проиграется эффект
-                    CheckBoard();
                 }
                 else
                 {
-                    if (_firstSelected == element)
-                    {
-                        _firstSelected.SetSelected(false);
-                        _firstSelected = null;
-                    }
-                    else
-                    {
-                        _firstSelected.SetSelected(false);
-                        _firstSelected = element;
-                        element.SetSelected(true);
-                    }                    
-                }
+                    _firstSelected.SetSelected(false);
+                    _firstSelected = element;
+                    element.SetSelected(true);
+                }                    
             }
-        }
-
-        private bool IsCanSwap(Element first, Element second)
-        {
-            var comparePosition = first.GridPosition;
-            comparePosition.x += 1;
-            if (comparePosition == second.GridPosition)
-            {
-                return true;
-            }
-
-            comparePosition = first.GridPosition;
-            comparePosition.x -= 1;
-            if (comparePosition == second.GridPosition)
-            {
-                return true;
-            }
-            
-            comparePosition = first.GridPosition;
-            comparePosition.y += 1;
-            if (comparePosition == second.GridPosition)
-            {
-                return true;
-            }
-            
-            comparePosition = first.GridPosition;
-            comparePosition.y -= 1;
-            if (comparePosition == second.GridPosition)
-            {
-                return true;
-            }
-
-            return false;
-        }
-
-        private void Swap(Element first, Element second)
-        {
-            _elements[(int)first.GridPosition.x, (int)first.GridPosition.y] = second;
-            _elements[(int)second.GridPosition.x, (int)second.GridPosition.y] = first;
-
-            Vector2 position = second.transform.localPosition;
-            Vector2 gridPosition = second.GridPosition;
-            
-            second.SetLocalPosition(first.transform.localPosition, first.GridPosition);
-            first.SetLocalPosition(position, gridPosition);
-        }
-
-        private void CheckBoard()
-        {
-            _isBlocked = true;
-            bool isNeedRecheck;
-            List<Element> elementsForCollecting = new List<Element>();
-
-            do
-            {
-                isNeedRecheck = false;
-                elementsForCollecting.Clear();
-
-                elementsForCollecting = SearchLines();
-
-                if (elementsForCollecting.Count > 0)
-                {
-                    DisableElements(elementsForCollecting);
-                    //_signalBus.Fire(new OnBoardMatchSignal(elementsForCollecting.Count)); // ? Error
-                    NormlizeBoard();
-                    isNeedRecheck = true;
-                }
-
-            } while (isNeedRecheck);
-            
-            _isBlocked = false;
-        }
-
-        private List<Element> SearchLines()
-        {
-            List<Element> elementsForCollecting = new List<Element>();
-            
-            var row = _boardConfig.SizeX;
-            var column = _boardConfig.SizeY;
-
-            for (int y = 0; y < column; y++)
-            {
-                for (int x = 0; x < row; x++)
-                {
-                    if (_elements[x, y].IsActive && !elementsForCollecting.Contains(_elements[x, y]))
-                    {
-                        bool needAddFirst = false;
-                        List<Element> checkResult = CheckHorizontal(x, y);
-                        if (checkResult != null && checkResult.Count >= 2)
-                        {
-                            needAddFirst = true;
-                            elementsForCollecting.AddRange(checkResult);
-                        }
-
-                        checkResult = CheckVertical(x, y);
-                        if (checkResult != null && checkResult.Count >= 2)
-                        {
-                            needAddFirst = true;
-                            elementsForCollecting.AddRange(checkResult);
-                        }
-
-                        if (needAddFirst)
-                        {
-                            elementsForCollecting.Add(_elements[x, y]);
-                        }
-                    }
-                }
-            }
-
-            return elementsForCollecting;
-        }
-        
-        private void NormlizeBoard()
-        {
-            var row = _boardConfig.SizeX;
-            var column = _boardConfig.SizeY;
-
-            for (int x = row - 1; x >= 0; x--)
-            {
-                List<Element> freeElements = new List<Element>();
-                for (int y = column - 1; y >= 0; y--)
-                {
-                    while (y >= 0 && !_elements[x, y])
-                    {
-                        freeElements.Add(_elements[x, y]);
-                        y--;
-                    }
-
-                    if (y >= 0 && freeElements.Count > 0)
-                    {
-                        Swap(_elements[x, y], freeElements[0]);
-                        freeElements.Add(freeElements[0]);
-                        freeElements.RemoveAt(0);
-                    }
-                }
-            }
-
-            for (int y = column - 1; y >= 0; y--)
-            {
-                for (int x = row - 1; x >= 0; x--)
-                {
-                    if (!_elements[x, y].IsActive)
-                    {
-                        GenerateRandomElement(_elements[x, y], row, column);
-                        _elements[x, y].Enable();
-                    }
-                }
-            }
-        }
-
-        private void GenerateRandomElement(Element element, int row, int column)
-        {
-            var gridPosition = element.GridPosition;
-            var possibleElements = GetPossibleElement((int)gridPosition.x, (int)gridPosition.y, row, column);
-            element.SetConfig(possibleElements);
-        }
-        
-        private void DisableElements(List<Element> elementsForCollecting)
-        {
-            foreach (var element in elementsForCollecting)
-            {
-                element.Disable();
-            }
-        }
-
-        private List<Element> CheckHorizontal(int x, int y)
-        {
-            var row = _boardConfig.SizeX;
-            var columns = _boardConfig.SizeY;
-
-            int nextRow = x + 1;
-            int nextColumn = y;
-
-            if (nextRow >= row)
-                return null;
-
-            List<Element> elemntsInLine = new List<Element>();
-            Element mainElement = _elements[x, y];
-
-            while (_elements[nextRow, nextColumn].IsActive && mainElement.Key == _elements[nextRow, nextColumn].Key)
-            {
-                elemntsInLine.Add(_elements[nextRow, nextColumn]);
-                if (nextRow + 1 < row)
-                {
-                    nextRow++;
-                }
-                else
-                {
-                    break;
-                }
-            }
-
-            return elemntsInLine;
-        }
-        
-        private List<Element> CheckVertical(int x, int y)
-        {
-            var row = _boardConfig.SizeX;
-            var columns = _boardConfig.SizeY;
-
-            int nextRow = x;
-            int nextColumn = y + 1;
-
-            if (nextColumn >= columns)
-                return null;
-
-            List<Element> elemntsInLine = new List<Element>();
-            Element mainElement = _elements[x, y];
-
-            while (_elements[nextRow, nextColumn].IsActive && mainElement.Key == _elements[nextRow, nextColumn].Key)
-            {
-                elemntsInLine.Add(_elements[nextRow, nextColumn]);
-                if (nextColumn + 1 < columns)
-                {
-                    nextColumn++;
-                }
-                else
-                {
-                    break;
-                }
-            }
-
-            return elemntsInLine;
         }
     }
+
+    private bool IsCanSwap(Element first, Element second)
+    {
+        var comparePosition = first.GridPosition;
+        comparePosition.x += 1;
+        if (comparePosition == second.GridPosition)
+        {
+            return true;
+        }
+
+        comparePosition = first.GridPosition;
+        comparePosition.x -= 1;
+        if (comparePosition == second.GridPosition)
+        {
+            return true;
+        }
+        
+        comparePosition = first.GridPosition;
+        comparePosition.y += 1;
+        if (comparePosition == second.GridPosition)
+        {
+            return true;
+        }
+        
+        comparePosition = first.GridPosition;
+        comparePosition.y -= 1;
+        if (comparePosition == second.GridPosition)
+        {
+            return true;
+        }
+
+        return false;
+    }
+
+    private void Swap(Element first, Element second)
+    {
+        _elements[(int)first.GridPosition.x, (int)first.GridPosition.y] = second;
+        _elements[(int)second.GridPosition.x, (int)second.GridPosition.y] = first;
+
+        Vector2 position = second.transform.localPosition;
+        Vector2 gridPosition = second.GridPosition;
+        
+        second.SetLocalPosition(first.transform.localPosition, first.GridPosition);
+        first.SetLocalPosition(position, gridPosition);
+    }
+
+    private void CheckBoard()
+    {
+        _isBlocked = true;
+        bool isNeedRecheck;
+        List<Element> elementsForCollecting = new List<Element>();
+
+        do
+        {
+            isNeedRecheck = false;
+            elementsForCollecting.Clear();
+
+            elementsForCollecting = SearchLines();
+
+            if (elementsForCollecting.Count > 0)
+            {
+                DisableElements(elementsForCollecting);
+                _signalBus.Fire(new OnBoardMatchSignal(elementsForCollecting.Count)); // ? Error
+                NormlizeBoard();
+                isNeedRecheck = true;
+            }
+
+        } while (isNeedRecheck);
+        
+        _isBlocked = false;
+    }
+
+    private List<Element> SearchLines()
+    {
+        List<Element> elementsForCollecting = new List<Element>();
+        
+        var row = _boardConfig.SizeX;
+        var column = _boardConfig.SizeY;
+
+        for (int y = 0; y < column; y++)
+        {
+            for (int x = 0; x < row; x++)
+            {
+                if (_elements[x, y].IsActive && !elementsForCollecting.Contains(_elements[x, y]))
+                {
+                    bool needAddFirst = false;
+                    List<Element> checkResult = CheckHorizontal(x, y);
+                    if (checkResult != null && checkResult.Count >= 2)
+                    {
+                        needAddFirst = true;
+                        elementsForCollecting.AddRange(checkResult);
+                    }
+
+                    checkResult = CheckVertical(x, y);
+                    if (checkResult != null && checkResult.Count >= 2)
+                    {
+                        needAddFirst = true;
+                        elementsForCollecting.AddRange(checkResult);
+                    }
+
+                    if (needAddFirst)
+                    {
+                        elementsForCollecting.Add(_elements[x, y]);
+                    }
+                }
+            }
+        }
+
+        return elementsForCollecting;
+    }
+    
+    private void NormlizeBoard()
+    {
+        var row = _boardConfig.SizeX;
+        var column = _boardConfig.SizeY;
+
+        for (int x = row - 1; x >= 0; x--)
+        {
+            List<Element> freeElements = new List<Element>();
+            for (int y = column - 1; y >= 0; y--)
+            {
+                while (y >= 0 && !_elements[x, y])
+                {
+                    freeElements.Add(_elements[x, y]);
+                    y--;
+                }
+
+                if (y >= 0 && freeElements.Count > 0)
+                {
+                    Swap(_elements[x, y], freeElements[0]);
+                    freeElements.Add(freeElements[0]);
+                    freeElements.RemoveAt(0);
+                }
+            }
+        }
+
+        for (int y = column - 1; y >= 0; y--)
+        {
+            for (int x = row - 1; x >= 0; x--)
+            {
+                if (!_elements[x, y].IsActive)
+                {
+                    GenerateRandomElement(_elements[x, y], row, column);
+                    _elements[x, y].Enable();
+                }
+            }
+        }
+    }
+
+    private void GenerateRandomElement(Element element, int row, int column)
+    {
+        var gridPosition = element.GridPosition;
+        var possibleElements = GetPossibleElement((int)gridPosition.x, (int)gridPosition.y, row, column);
+        element.SetConfig(possibleElements);
+    }
+    
+    private void DisableElements(List<Element> elementsForCollecting)
+    {
+        foreach (var element in elementsForCollecting)
+        {
+            element.Disable();
+        }
+    }
+
+    private List<Element> CheckHorizontal(int x, int y)
+    {
+        var row = _boardConfig.SizeX;
+        var columns = _boardConfig.SizeY;
+
+        int nextRow = x + 1;
+        int nextColumn = y;
+
+        if (nextRow >= row)
+            return null;
+
+        List<Element> elemntsInLine = new List<Element>();
+        Element mainElement = _elements[x, y];
+
+        while (_elements[nextRow, nextColumn].IsActive && mainElement.Key == _elements[nextRow, nextColumn].Key)
+        {
+            elemntsInLine.Add(_elements[nextRow, nextColumn]);
+            if (nextRow + 1 < row)
+            {
+                nextRow++;
+            }
+            else
+            {
+                break;
+            }
+        }
+
+        return elemntsInLine;
+    }
+    
+    private List<Element> CheckVertical(int x, int y)
+    {
+        var row = _boardConfig.SizeX;
+        var columns = _boardConfig.SizeY;
+
+        int nextRow = x;
+        int nextColumn = y + 1;
+
+        if (nextColumn >= columns)
+            return null;
+
+        List<Element> elemntsInLine = new List<Element>();
+        Element mainElement = _elements[x, y];
+
+        while (_elements[nextRow, nextColumn].IsActive && mainElement.Key == _elements[nextRow, nextColumn].Key)
+        {
+            elemntsInLine.Add(_elements[nextRow, nextColumn]);
+            if (nextColumn + 1 < columns)
+            {
+                nextColumn++;
+            }
+            else
+            {
+                break;
+            }
+        }
+
+        return elemntsInLine;
+    }
 }
+    

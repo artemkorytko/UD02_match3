@@ -46,6 +46,7 @@ public class Element : MonoBehaviour
     
     public void SetConfig(ElementConfigItem element)
     {
+        _configItem = element;
         iconSpriteRenderer.sprite = element.Sprite;
     }
     
@@ -71,7 +72,8 @@ public class Element : MonoBehaviour
 
     public void Disable()
     {
-        //TODO animation 
+        //TODO animation
+        IsActive = false;
         gameObject.SetActive(false);
         // CHECK !!!
     }
@@ -86,7 +88,7 @@ public class Element : MonoBehaviour
         OnClick();
     }
 
-    public void OnClick()
+    private void OnClick()
     {
         _signalBus.Fire(new OnElementClickSignal(this));
     }

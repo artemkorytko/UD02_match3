@@ -1,7 +1,5 @@
-﻿namespace Signals
+﻿
+public class OnBoardClosedSignal
 {
-    public class OnBoardClosedSignal
-    {
-        
-    }
+    
 }

@@ -1,12 +1,10 @@
-﻿namespace Signals
+﻿
+public class OnBoardMatchSignal
 {
-    public class OnBoardMatchSignal
-    {
-        public readonly int Value;
+    public readonly int Value;
 
-        public OnBoardMatchSignal(int value)
-        {
-            Value = value;
-        }
+    public OnBoardMatchSignal(int value)
+    {
+        Value = value;
     }
 }

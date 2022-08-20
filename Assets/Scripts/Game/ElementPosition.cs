@@ -1,14 +1,13 @@
 ﻿using UnityEngine;
 
+public class ElementPosition
+{
+    public Vector2 LocalPosition;
+    public Vector2 GridPosition;
 
-    public class ElementPosition
+    public ElementPosition(Vector2 localPosition, Vector2 gridPosition)
     {
-        public Vector2 LocalPosition;
-        public Vector2 GridPosition;
-
-        public ElementPosition(Vector2 localPosition, Vector2 gridPosition)
-        {
-            LocalPosition = localPosition;
-            GridPosition = gridPosition;
-        }
+        LocalPosition = localPosition;
+        GridPosition = gridPosition;
     }
+}

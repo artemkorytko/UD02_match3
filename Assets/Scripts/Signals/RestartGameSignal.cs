@@ -1,4 +1,5 @@
-﻿public class RestartGameSignal
+﻿
+public class RestartGameSignal
 {
-        
+    
 }

@@ -1,4 +1,3 @@
-using Configs.Board;
 using UnityEngine;
 using Zenject;
 

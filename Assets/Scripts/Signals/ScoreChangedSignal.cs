@@ -1,4 +1,5 @@
-﻿public class ScoreChangedSignal
+﻿
+public class ScoreChangedSignal
 {
     public readonly int Value;
 
