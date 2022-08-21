@@ -13,13 +13,13 @@ MonoBehaviour:
   m_Name: ElementsConfig
   m_EditorClassIdentifier: 
   configItem:
-  - key: Aquamarin
-    sprite: {fileID: 21300000, guid: 95f5da73d2e27934589e6f9e1c8137ab, type: 3}
+  - key: Green
+    sprite: {fileID: 21300000, guid: fc7b0bdb24c6a6e4992d799df295eeef, type: 3}
   - key: Blue
-    sprite: {fileID: 21300000, guid: b5f167dd4bf49384b897db5388f1b04d, type: 3}
+    sprite: {fileID: 21300000, guid: 53e54ae94a7ae1c49ad8dd9abc5cfd34, type: 3}
   - key: Orange
     sprite: {fileID: 21300000, guid: 81206bd18f145d4429c9bcc77dc40bde, type: 3}
   - key: Red
     sprite: {fileID: 21300000, guid: f6e834b8e0f64c94b86c04a9a2eb7f90, type: 3}
-  - key: Yellow
-    sprite: {fileID: 21300000, guid: 9905b439cfdab734381a48991d7488f1, type: 3}
+  - key: Lilac
+    sprite: {fileID: 21300000, guid: a67ac5c05b4131044a33e706c2cca4d5, type: 3}

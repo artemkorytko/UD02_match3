@@ -49,9 +49,9 @@ public class BoardController : IDisposable
         var columns = _boardConfig.SizeY;
         var index = 0;
         
-        for (int y = 0; y < columns; y++)
+        for (var y = 0; y < columns; y++)
         {
-            for (int x = 0; x < row; x++)
+            for (var x = 0; x < row; x++)
             {
                 array[index++] = _elements[x, y].Key;
             }
@@ -65,9 +65,9 @@ public class BoardController : IDisposable
         var row = _boardConfig.SizeX;
         var columns = _boardConfig.SizeY;
 
-        for (int y = 0; y < columns; y++)
+        for (var y = 0; y < columns; y++)
         {
-            for (int x = 0; x < row; x++)
+            for (var x = 0; x < row; x++)
             {
                 _elements[x, y].DestroySelf();
             }
@@ -82,17 +82,19 @@ public class BoardController : IDisposable
         var row = _boardConfig.SizeX;
         var column = _boardConfig.SizeY;
         var elementOffset = _boardConfig.ElementOffset;
+        
         var startPosition = new Vector2(-elementOffset * row * 0.5f + elementOffset * 0.5f,
                                          elementOffset * column * 0.5f - elementOffset * 0.5f);
         _elements = new Element[row, column];
         
-        for (int y = 0; y < column; y++)
+        for (var y = 0; y < column; y++)
         {
-            for (int x = 0; x < row; x++)
+            for (var x = 0; x < row; x++)
             {
                 var position = startPosition + new Vector2(elementOffset * x, -elementOffset * y);
                 var element = _factory.Create(new ElementPosition(position, new Vector2(x, y)),
                     GetPossibleElement(x, y, row, column));
+                
                 element.Initialize();
                 _elements[x, y] = element;
             }
@@ -108,12 +110,12 @@ public class BoardController : IDisposable
         
         _elements = new Element[row, column];
         var startPosition = new Vector2(-elementOffset * row * 0.5f + elementOffset * 0.5f,
-            elementOffset * column * 0.5f - elementOffset * 0.5f);
+                                         elementOffset * column * 0.5f - elementOffset * 0.5f);
 
-        for (int i = 0; i < dataBoardState.Length; i++)
+        for (var i = 0; i < dataBoardState.Length; i++)
         {
-            int y = i / _boardConfig.SizeX;
-            int x = i % _boardConfig.SizeX;
+            var y = i / _boardConfig.SizeX;
+            var x = i % _boardConfig.SizeX;
             var position = startPosition + new Vector2(elementOffset * x, -elementOffset * y);
             var element = _factory.Create(new ElementPosition(position, new Vector2(y, x)),
                 _elementsConfig.GetByKey(dataBoardState[i]));
@@ -126,8 +128,8 @@ public class BoardController : IDisposable
     {
         var tempList = new List<ElementConfigItem>(_elementsConfig.ConfigItem);
 
-        int x = row;
-        int y = column - 1;
+        var x = row;
+        var y = column - 1;
 
         if (x >= 0 && x < rowCount && y >= 0 && y < columnCount)
         {
@@ -156,6 +158,7 @@ public class BoardController : IDisposable
         if (_isBlocked) return;
 
         var element = signal.Element;
+        
         if (_firstSelected == null)
         {
             _firstSelected = element;
@@ -190,30 +193,37 @@ public class BoardController : IDisposable
 
     private bool IsCanSwap(Element first, Element second)
     {
-        var comparePosition = first.GridPosition;
+        var firstPosition = first.GridPosition;
+        var secondPosition = second.GridPosition;
+        
+        var comparePosition = firstPosition;
         comparePosition.x += 1;
-        if (comparePosition == second.GridPosition)
+        
+        if (comparePosition == secondPosition)
         {
             return true;
         }
 
-        comparePosition = first.GridPosition;
+        comparePosition = firstPosition;
         comparePosition.x -= 1;
-        if (comparePosition == second.GridPosition)
+        
+        if (comparePosition == secondPosition)
         {
             return true;
         }
         
-        comparePosition = first.GridPosition;
+        comparePosition = firstPosition;
         comparePosition.y += 1;
-        if (comparePosition == second.GridPosition)
+        
+        if (comparePosition == secondPosition)
         {
             return true;
         }
         
-        comparePosition = first.GridPosition;
+        comparePosition = firstPosition;
         comparePosition.y -= 1;
-        if (comparePosition == second.GridPosition)
+        
+        if (comparePosition == secondPosition)
         {
             return true;
         }
@@ -221,16 +231,18 @@ public class BoardController : IDisposable
         return false;
     }
 
-    private void Swap(Element first, Element second)
+    private void Swap(Element firstElement, Element secondElement)
     {
-        _elements[(int)first.GridPosition.x, (int)first.GridPosition.y] = second;
-        _elements[(int)second.GridPosition.x, (int)second.GridPosition.y] = first;
+        _elements[(int)firstElement.GridPosition.x, (int)firstElement.GridPosition.y] = secondElement;
+        _elements[(int)secondElement.GridPosition.x, (int)secondElement.GridPosition.y] = firstElement;
 
-        Vector2 position = second.transform.localPosition;
-        Vector2 gridPosition = second.GridPosition;
+        Vector2 secondPosition = secondElement.transform.localPosition;
+        Vector2 secondGridPosition = secondElement.GridPosition;
         
-        second.SetLocalPosition(first.transform.localPosition, first.GridPosition);
-        first.SetLocalPosition(position, gridPosition);
+        // Дождаться выполнения эффекта
+        
+        secondElement.SetLocalPosition(firstElement.transform.localPosition, firstElement.GridPosition);
+        firstElement.SetLocalPosition(secondPosition, secondGridPosition);
     }
 
     private void CheckBoard()
@@ -249,7 +261,7 @@ public class BoardController : IDisposable
             if (elementsForCollecting.Count > 0)
             {
                 DisableElements(elementsForCollecting);
-                _signalBus.Fire(new OnBoardMatchSignal(elementsForCollecting.Count)); // ? Error
+                _signalBus.Fire(new OnBoardMatchSignal(elementsForCollecting.Count));
                 NormlizeBoard();
                 isNeedRecheck = true;
             }
@@ -266,13 +278,13 @@ public class BoardController : IDisposable
         var row = _boardConfig.SizeX;
         var column = _boardConfig.SizeY;
 
-        for (int y = 0; y < column; y++)
+        for (var y = 0; y < column; y++)
         {
-            for (int x = 0; x < row; x++)
+            for (var x = 0; x < row; x++)
             {
                 if (_elements[x, y].IsActive && !elementsForCollecting.Contains(_elements[x, y]))
                 {
-                    bool needAddFirst = false;
+                    var needAddFirst = false;
                     List<Element> checkResult = CheckHorizontal(x, y);
                     if (checkResult != null && checkResult.Count >= 2)
                     {
@@ -298,59 +310,6 @@ public class BoardController : IDisposable
         return elementsForCollecting;
     }
     
-    private void NormlizeBoard()
-    {
-        var row = _boardConfig.SizeX;
-        var column = _boardConfig.SizeY;
-
-        for (int x = row - 1; x >= 0; x--)
-        {
-            List<Element> freeElements = new List<Element>();
-            for (int y = column - 1; y >= 0; y--)
-            {
-                while (y >= 0 && !_elements[x, y])
-                {
-                    freeElements.Add(_elements[x, y]);
-                    y--;
-                }
-
-                if (y >= 0 && freeElements.Count > 0)
-                {
-                    Swap(_elements[x, y], freeElements[0]);
-                    freeElements.Add(freeElements[0]);
-                    freeElements.RemoveAt(0);
-                }
-            }
-        }
-
-        for (int y = column - 1; y >= 0; y--)
-        {
-            for (int x = row - 1; x >= 0; x--)
-            {
-                if (!_elements[x, y].IsActive)
-                {
-                    GenerateRandomElement(_elements[x, y], row, column);
-                    _elements[x, y].Enable();
-                }
-            }
-        }
-    }
-
-    private void GenerateRandomElement(Element element, int row, int column)
-    {
-        var gridPosition = element.GridPosition;
-        var possibleElements = GetPossibleElement((int)gridPosition.x, (int)gridPosition.y, row, column);
-        element.SetConfig(possibleElements);
-    }
-    
-    private void DisableElements(List<Element> elementsForCollecting)
-    {
-        foreach (var element in elementsForCollecting)
-        {
-            element.Disable();
-        }
-    }
-
     private List<Element> CheckHorizontal(int x, int y)
     {
         var row = _boardConfig.SizeX;
@@ -409,6 +368,59 @@ public class BoardController : IDisposable
         }
 
         return elemntsInLine;
+    }
+    
+    private void NormlizeBoard()
+    {
+        var row = _boardConfig.SizeX;
+        var column = _boardConfig.SizeY;
+
+        for (var x = row - 1; x >= 0; x--)
+        {
+            List<Element> freeElements = new List<Element>();
+            for (var y = column - 1; y >= 0; y--)
+            {
+                while (y >= 0 && !_elements[x, y])
+                {
+                    freeElements.Add(_elements[x, y]);
+                    y--;
+                }
+
+                if (y >= 0 && freeElements.Count > 0)
+                {
+                    Swap(_elements[x, y], freeElements[0]);
+                    freeElements.Add(freeElements[0]);
+                    freeElements.RemoveAt(0);
+                }
+            }
+        }
+
+        for (int y = column - 1; y >= 0; y--)
+        {
+            for (int x = row - 1; x >= 0; x--)
+            {
+                if (!_elements[x, y].IsActive)
+                {
+                    GenerateRandomElement(_elements[x, y], row, column);
+                    _elements[x, y].Enable();
+                }
+            }
+        }
+    }
+
+    private void GenerateRandomElement(Element element, int row, int column)
+    {
+        var gridPosition = element.GridPosition;
+        var possibleElements = GetPossibleElement((int)gridPosition.x, (int)gridPosition.y, row, column);
+        element.SetConfig(possibleElements);
+    }
+    
+    private void DisableElements(List<Element> elementsForCollecting)
+    {
+        foreach (var element in elementsForCollecting)
+        {
+            element.Disable();
+        }
     }
 }
     

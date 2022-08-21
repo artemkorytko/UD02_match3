@@ -53,6 +53,7 @@ public class Element : MonoBehaviour
     private void SetLocalPosition()
     {
         transform.localPosition = _localPosition;
+        // Лучше здесь добавить эффект перемещения
     }
     
     public void SetLocalPosition(Vector2 newLocalPosition, Vector2 gridPosition)
