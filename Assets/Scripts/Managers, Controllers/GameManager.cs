@@ -1,13 +1,13 @@
 using System;
-using UnityEngine;
 using Zenject;
 
 public class GameManager : IInitializable, IDisposable
 {
-    private SaveSystem _saveSystem;
-    private SignalBus _signalBus;
-    private BoardController _boardController;
+    private readonly SaveSystem _saveSystem;
+    private readonly SignalBus _signalBus;
+    private readonly BoardController _boardController;
     private int _score = -1;
+    private const int SCORE_MULTIPLIER = 10;
 
     private int Score
     {
@@ -27,7 +27,6 @@ public class GameManager : IInitializable, IDisposable
         _boardController = boardController;
         _saveSystem = saveSystem;
         _signalBus = signalBus;
-        Debug.Log("Link to SaveSystem in GameManager constructor");
     }
     
     public void Initialize()
@@ -35,13 +34,13 @@ public class GameManager : IInitializable, IDisposable
         _saveSystem.Initialize();
         SubscribeSignals();
         Score = _saveSystem.Data.Score;
-        Debug.Log(_saveSystem.Data);
         CreateGame();
     }
 
     public void Dispose()
     {
         UnsubscribeSignals();
+        _saveSystem.SaveData(_boardController.GetBoardState(), Score);
     }
 
     private void SubscribeSignals()
@@ -49,6 +48,7 @@ public class GameManager : IInitializable, IDisposable
         _signalBus.Subscribe<CreateGameSignal>(CreateGame);
         _signalBus.Subscribe<RestartGameSignal>(OnRestart);
         _signalBus.Subscribe<AddScoreSignal>(OnAddScore);
+        _signalBus.Subscribe<OnBoardMatchSignal>(OnMatch);
     }
     
     private void UnsubscribeSignals()
@@ -56,17 +56,19 @@ public class GameManager : IInitializable, IDisposable
         _signalBus.Unsubscribe<CreateGameSignal>(CreateGame);
         _signalBus.Unsubscribe<RestartGameSignal>(OnRestart);
         _signalBus.Unsubscribe<AddScoreSignal>(OnAddScore);
+        _signalBus.Unsubscribe<OnBoardMatchSignal>(OnMatch);
     }
 
-    private void CreateGame()
+    private async void CreateGame()
     {
         if (_saveSystem.Data.BoardState == null || _saveSystem.Data.BoardState.Length == 0)
         {
-            _boardController.Initialize();
+            await _boardController.Initialize();
+            Score = 0;
         }
         else
         {
-            _boardController.Initialize();
+            await _boardController.Initialize(_saveSystem.Data.BoardState);
         }
     }
     
@@ -74,9 +76,15 @@ public class GameManager : IInitializable, IDisposable
     {
         Score += signal.Value;
     }
-
-    private void OnRestart()
+    
+    private void OnMatch(OnBoardMatchSignal matchCount)
     {
-        Debug.Log("Restart");
+        _signalBus.Fire(new AddScoreSignal(SCORE_MULTIPLIER * matchCount.Value));
+    }
+
+    private async void OnRestart()
+    {
+        Score = 0;
+        await _boardController.Restart();
     }
 }

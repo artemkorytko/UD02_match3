@@ -5,9 +5,10 @@ using UnityEngine;
 public class ElementsConfig : ScriptableObject
 {
     [SerializeField] private ElementConfigItem[] configItem;
-
+    [SerializeField] private float effectsDuration = 0.1f;
+    
     public ElementConfigItem[] ConfigItem => configItem;
-
+    public float EffectsDuration => effectsDuration;
     public ElementConfigItem GetByKey(string key)
     {
         return ConfigItem.FirstOrDefault(item => item.Key == key);

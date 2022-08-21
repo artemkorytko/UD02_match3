@@ -2,7 +2,7 @@ using UnityEngine;
 
 public class SaveSystem
 {
-    private GameData _gameData = null;
+    private GameData _gameData;
     private const string DATA_KEY = "GameData";
 
     public GameData Data => _gameData;
@@ -19,15 +19,22 @@ public class SaveSystem
         }
     }
 
-    public void LoadData()
+    private void LoadData()
     {
-        string jsonData = PlayerPrefs.GetString(DATA_KEY);
+        var jsonData = PlayerPrefs.GetString(DATA_KEY);
         _gameData = JsonUtility.FromJson<GameData>(jsonData);
     }
 
-    public void SaveData()
+    public int LoadScore()
     {
-        string jsonData = JsonUtility.ToJson(_gameData);
+        return _gameData.Score;
+    }
+
+    public void SaveData(string[] boardToSave, int score)
+    {
+        _gameData.Score = score;
+        _gameData.BoardState = boardToSave;
+        var jsonData = JsonUtility.ToJson(_gameData);
         PlayerPrefs.SetString(DATA_KEY, jsonData);
     }
 }
