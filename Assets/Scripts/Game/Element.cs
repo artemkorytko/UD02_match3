@@ -1,6 +1,8 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using Cysharp.Threading.Tasks;
+using DG.Tweening;
 using Game;
 using Signals;
 using UnityEngine;
@@ -9,6 +11,8 @@ using Zenject;
 
 public class Element : MonoBehaviour
 {
+    private const float ANIMATION_TIME = 0.5f;
+
     public class Factory : PlaceholderFactory<ElementPosition, ElementConfigItem, Element>
     {
     }
@@ -26,6 +30,7 @@ public class Element : MonoBehaviour
     public bool IsInitialized { get; private set; }
 
     public ElementConfigItem ConfigItem => _configItem;
+    private Vector2 _startLocalScale;
 
     [Inject]
     public void Construct(ElementPosition elementPosition, ElementConfigItem configItem, SignalBus signalBus)
@@ -38,6 +43,7 @@ public class Element : MonoBehaviour
 
     public void Initialize()
     {
+        _startLocalScale = transform.localScale;
         SetConfig();
         SetLocalPosition();
         Enable();
@@ -59,20 +65,22 @@ public class Element : MonoBehaviour
         _gridPosition = gridPosition;
     }
 
-    public void Enable()
+    public async UniTask Enable()
     {
+        IsActive = true;
         gameObject.SetActive(true);
         SetSelected(false);
-        //TODO: add animation logic from DoTween;
-        IsActive = true;
+        transform.localScale = Vector3.zero;
         IsInitialized = true;
+        await transform.DOScale(_startLocalScale, ANIMATION_TIME);
+       
     }
 
-    public void Disable()
+    public async UniTask Disable()
     {
         IsActive = false;
+        await transform.DOScale(Vector3.zero, ANIMATION_TIME);
         gameObject.SetActive(false);
-        //TODO: add animation logic from DoTween;
     }
 
     public void SetSelected(bool isOn)

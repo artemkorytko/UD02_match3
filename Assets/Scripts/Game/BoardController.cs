@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Configs.Board;
+using Cysharp.Threading.Tasks;
 using Signals;
 using UnityEngine;
 using Zenject;
@@ -39,22 +40,24 @@ namespace Game
             }
 
             _signalBus.Subscribe<OnElementClickSignal>(OnElementClick);
+            _signalBus.Subscribe<RestartGameSignal>(Restart);
         }
 
         public void Dispose()
         {
             _signalBus.Unsubscribe<OnElementClickSignal>(OnElementClick);
+            _signalBus.Unsubscribe<RestartGameSignal>(Restart);
         }
 
         public string[] GetBoardState()
         {
             var array = new string[_boardConfig.SizeX * _boardConfig.SizeY];
-            var row = _boardConfig.SizeX;
-            var column = _boardConfig.SizeY;
+            var column = _boardConfig.SizeX;
+            var row = _boardConfig.SizeY;
             var index = 0;
-            for (int y = 0; y < column; y++)
+            for (int y = 0; y < row; y++)
             {
-                for (int x = 0; x < row; x++)
+                for (int x = 0; x < column; x++)
                 {
                     array[index++] = _elements[x, y].Key;
                 }
@@ -63,39 +66,40 @@ namespace Game
             return array;
         }
 
-        public void Restart()
+        public async void Restart()
         {
-            var row = _boardConfig.SizeX;
-            var column = _boardConfig.SizeY;
+            var column = _boardConfig.SizeX;
+            var row = _boardConfig.SizeY;
 
-            for (int y = 0; y < column; y++)
+            for (int y = 0; y < row; y++)
             {
-                for (int x = 0; x < row; x++)
+                for (int x = 0; x < column; x++)
                 {
                     _elements[x, y].DestroySelf();
                 }
             }
-
+        
             _elements = null;
+            await UniTask.Yield();
             GenerateElements();
         }
 
         private void GenerateElements()
         {
-            var row = _boardConfig.SizeX;
-            var column = _boardConfig.SizeY;
+            var column = _boardConfig.SizeX;
+            var row = _boardConfig.SizeY;
             var elementOffset = _boardConfig.ElementOffset;
 
-            var startPosition = new Vector2(-elementOffset * row * 0.5f + elementOffset * 0.5f,
-                elementOffset * column * 0.5f - elementOffset * 0.5f);
-            _elements = new Element[row, column];
-            for (int y = 0; y < column; y++)
+            var startPosition = new Vector2(-elementOffset * column * 0.5f + elementOffset * 0.5f,
+                elementOffset * row * 0.5f - elementOffset * 0.5f);
+            _elements = new Element[column, row];
+            for (int y = 0; y < row; y++)
             {
-                for (int x = 0; x < row; x++)
+                for (int x = 0; x < column; x++)
                 {
                     var position = startPosition + new Vector2(elementOffset * x, -elementOffset * y);
                     var element = _factory.Create(new ElementPosition(position, new Vector2(x, y))
-                        , GetPossibleElement(x, y, row, column));
+                        , GetPossibleElement(x, y, column, row));
                     element.Initialize();
                     _elements[x, y] = element;
                 }
@@ -104,13 +108,13 @@ namespace Game
 
         private void LoadElements(string[] dataBoardState)
         {
-            var row = _boardConfig.SizeX;
-            var column = _boardConfig.SizeY;
+            var column = _boardConfig.SizeX;
+            var row = _boardConfig.SizeY;
             var elementOffset = _boardConfig.ElementOffset;
 
-            _elements = new Element[row, column];
-            var startPosition = new Vector2(-elementOffset * row * 0.5f + elementOffset * 0.5f,
-                elementOffset * column * 0.5f - elementOffset * 0.5f);
+            _elements = new Element[column, row];
+            var startPosition = new Vector2(-elementOffset * column * 0.5f + elementOffset * 0.5f,
+                elementOffset * row * 0.5f - elementOffset * 0.5f);
 
             for (int i = 0; i < dataBoardState.Length; i++)
             {
@@ -124,14 +128,14 @@ namespace Game
             }
         }
 
-        private ElementConfigItem GetPossibleElement(int row, int column, int rowCount, int columnCount)
+        private ElementConfigItem GetPossibleElement(int column, int row, int columnCount, int rowCount)
         {
             var tempList = new List<ElementConfigItem>(_elementsConfig.ConfigItem);
 
-            int x = row;
-            int y = column - 1;
+            int x = column;
+            int y = row - 1;
 
-            if (x >= 0 && x < rowCount && y >= 0 && y < columnCount)
+            if (x >= 0 && x < columnCount && y >= 0 && y < rowCount)
             {
                 if (_elements[x, y].IsInitialized)
                 {
@@ -139,10 +143,10 @@ namespace Game
                 }
             }
 
-            x = row - 1;
-            y = column;
+            x = column - 1;
+            y = row;
 
-            if (x >= 0 && x < rowCount && y >= 0 && y < columnCount)
+            if (x >= 0 && x < columnCount && y >= 0 && y < rowCount)
             {
                 if (_elements[x, y].IsInitialized)
                 {
@@ -169,7 +173,7 @@ namespace Game
                     _firstSelected.SetSelected(false);
                     Swap(_firstSelected, element);
                     _firstSelected = null;
-                    CheckBoard();
+                    CheckBoard().Forget();
                 }
                 else
                 {
@@ -188,7 +192,7 @@ namespace Game
             }
         }
 
-        private void CheckBoard()
+        private async UniTaskVoid CheckBoard()
         {
             _isBlocked = true;
             bool isNeedRecheck;
@@ -203,9 +207,9 @@ namespace Game
 
                 if (elementsForCollecting.Count > 0)
                 {
-                    DisableElements(elementsForCollecting);
-                   _signalBus.Fire(new OnBoardMatchSignal(elementsForCollecting.Count));
-                    NormalizeBoard();
+                    await DisableElements(elementsForCollecting);
+                    _signalBus.Fire(new OnBoardMatchSignal(elementsForCollecting.Count));
+                    await NormalizeBoard();
                     isNeedRecheck = true;
                 }
             } while (isNeedRecheck);
@@ -217,11 +221,11 @@ namespace Game
         {
             List<Element> elementsForCollecting = new List<Element>();
 
-            var row = _boardConfig.SizeX;
-            var column = _boardConfig.SizeY;
-            for (int y = 0; y < column; y++)
+            var column = _boardConfig.SizeX;
+            var row = _boardConfig.SizeY;
+            for (int y = 0; y < row; y++)
             {
-                for (int x = 0; x < row; x++)
+                for (int x = 0; x < column; x++)
                 {
                     if (_elements[x, y].IsActive && !elementsForCollecting.Contains(_elements[x, y]))
                     {
@@ -254,24 +258,24 @@ namespace Game
 
         private List<Element> CheckHorizontal(int x, int y)
         {
-            var row = _boardConfig.SizeX;
-            var column = _boardConfig.SizeY;
+            var column = _boardConfig.SizeX;
+            var row = _boardConfig.SizeY;
 
-            int nextRow = x + 1;
-            int nextColumn = y;
+            int nextcolumn = x + 1;
+            int nextrow = y;
 
-            if (nextRow >= row)
+            if (nextcolumn >= column)
                 return null;
 
             List<Element> elementsInLine = new List<Element>();
             Element mainElement = _elements[x, y];
 
-            while (_elements[nextRow, nextColumn].IsActive && mainElement.Key == _elements[nextRow, nextColumn].Key)
+            while (_elements[nextcolumn, nextrow].IsActive && mainElement.Key == _elements[nextcolumn, nextrow].Key)
             {
-                elementsInLine.Add(_elements[nextRow, nextColumn]);
-                if (nextRow + 1 < row)
+                elementsInLine.Add(_elements[nextcolumn, nextrow]);
+                if (nextcolumn + 1 < column)
                 {
-                    nextRow++;
+                    nextcolumn++;
                 }
                 else
                 {
@@ -284,24 +288,24 @@ namespace Game
 
         private List<Element> CheckVertical(int x, int y)
         {
-            var row = _boardConfig.SizeX;
-            var column = _boardConfig.SizeY;
+            var column = _boardConfig.SizeX;
+            var row = _boardConfig.SizeY;
 
-            int nextRow = x;
-            int nextColumn = y + 1;
+            int nextcolumn = x;
+            int nextrow = y + 1;
 
-            if (nextColumn >= column)
+            if (nextrow >= row)
                 return null;
 
             List<Element> elementsInLine = new List<Element>();
             Element mainElement = _elements[x, y];
 
-            while (_elements[nextRow, nextColumn].IsActive && mainElement.Key == _elements[nextRow, nextColumn].Key)
+            while (_elements[nextcolumn, nextrow].IsActive && mainElement.Key == _elements[nextcolumn, nextrow].Key)
             {
-                elementsInLine.Add(_elements[nextRow, nextColumn]);
-                if (nextColumn + 1 < column)
+                elementsInLine.Add(_elements[nextcolumn, nextrow]);
+                if (nextrow + 1 < row)
                 {
-                    nextColumn++;
+                    nextrow++;
                 }
                 else
                 {
@@ -312,23 +316,26 @@ namespace Game
             return elementsInLine;
         }
 
-        private void DisableElements(List<Element> elementsForCollecting)
+        private async UniTask DisableElements(List<Element> elementsForCollecting)
         {
+            var tasks = new List<UniTask>();
             foreach (var element in elementsForCollecting)
             {
-                element.Disable();
+                tasks.Add(element.Disable());
             }
+
+            await UniTask.WhenAll(tasks);
         }
 
-        private void NormalizeBoard()
+        private async UniTask NormalizeBoard()
         {
-            var row = _boardConfig.SizeX;
-            var column = _boardConfig.SizeY;
+            var column = _boardConfig.SizeX;
+            var row = _boardConfig.SizeY;
 
-            for (int x = row - 1; x >= 0; x--)
+            for (int x = column - 1; x >= 0; x--)
             {
                 List<Element> freeElements = new List<Element>();
-                for (int y = column - 1; y >= 0; y--)
+                for (int y = row - 1; y >= 0; y--)
                 {
                     while (y >= 0 && !_elements[x, y].IsActive)
                     {
@@ -345,23 +352,26 @@ namespace Game
                 }
             }
 
-            for (int y = column - 1; y >= 0; y--)
+            var tasks = new List<UniTask>();
+            for (int y = row - 1; y >= 0; y--)
             {
-                for (int x = row - 1; x >= 0; x--)
+                for (int x = column - 1; x >= 0; x--)
                 {
                     if (!_elements[x, y].IsActive)
                     {
-                        GenerateRandomElement(_elements[x, y], row, column);
-                        _elements[x, y].Enable();
+                        GenerateRandomElement(_elements[x, y], column, row);
+                        tasks.Add(_elements[x, y].Enable());
                     }
                 }
             }
+
+            await UniTask.WhenAll(tasks);
         }
 
-        private void GenerateRandomElement(Element element, int row, int column)
+        private void GenerateRandomElement(Element element, int column, int row)
         {
             Vector2 gridPosition = element.GridPosition;
-            var elements = GetPossibleElement((int) gridPosition.x, (int) gridPosition.y, row, column);
+            var elements = GetPossibleElement((int) gridPosition.x, (int) gridPosition.y, column, row);
             element.SetConfig(elements);
         }
 

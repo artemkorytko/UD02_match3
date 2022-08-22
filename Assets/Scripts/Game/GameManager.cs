@@ -7,6 +7,8 @@ namespace Game
 {
     public class GameManager : IInitializable, IDisposable
     {
+        private const int SCORE_FOR_ELEMENT = 10;
+
         private readonly SaveSystem _saveSystem;
         private readonly SignalBus _signalBus;
         private readonly BoardController _boardController;
@@ -48,15 +50,13 @@ namespace Game
         private void SubscribeSignals()
         {
             _signalBus.Subscribe<CreateGameSignal>(CreateGame);
-            _signalBus.Subscribe<RestartGameSignal>(OnRestart);
-            _signalBus.Subscribe<AddScoreSignal>(OnAddScore);
+            _signalBus.Subscribe<OnBoardMatchSignal>(OnAddScore);
         }
 
         private void UnsubscribeSignals()
         {
             _signalBus.Unsubscribe<CreateGameSignal>(CreateGame);
-            _signalBus.Unsubscribe<RestartGameSignal>(OnRestart);
-            _signalBus.Unsubscribe<AddScoreSignal>(OnAddScore);
+            _signalBus.Unsubscribe<OnBoardMatchSignal>(OnAddScore);
         }
 
         private void CreateGame()
@@ -71,14 +71,9 @@ namespace Game
             }
         }
 
-        private void OnAddScore(AddScoreSignal signal)
+        private void OnAddScore(OnBoardMatchSignal signal)
         {
-            Score += signal.Value;
-        }
-
-        private void OnRestart()
-        {
-            Debug.Log("Restart game invoke");
+            Score += SCORE_FOR_ELEMENT * signal.Value;
         }
     }
 }
