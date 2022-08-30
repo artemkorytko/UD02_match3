@@ -491,7 +491,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   elementPrefab: {fileID: 8801451130128343518, guid: 3a40bfc3e19697b4b83c6d9ac0ed41cb, type: 3}
-  scoreView: {fileID: 0}
+  scoreView: {fileID: 1250572762}
 --- !u!1 &519420028
 GameObject:
   m_ObjectHideFlags: 0

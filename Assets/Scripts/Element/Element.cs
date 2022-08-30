@@ -65,47 +65,33 @@ public class Element : MonoBehaviour
     
     public async UniTask SetLocalPosition(Vector2 newLocalPosition, Vector2 gridPosition)
     {
-        var effectCompleteFlag = false;
-        
-        transform.DOMove(newLocalPosition, _elementsConfig.EffectsDuration).OnComplete(() =>
+        await transform.DOMove(newLocalPosition, _elementsConfig.EffectsDuration).OnComplete(() =>
         {
-            effectCompleteFlag = true;
             _gridPosition = gridPosition;
         });
-        
-        await UniTask.WaitUntil(() => effectCompleteFlag);
     }
     
     public async UniTask Enable()
     {
-        var effectCompleteFlag = false;
-        
         gameObject.SetActive(true);
         SetSelected(false);
         
         transform.localScale = effectSmallScale;
-        transform.DOScale(effectNormalScale, _elementsConfig.EffectsDuration).OnComplete(() =>
+        
+        await transform.DOScale(effectNormalScale, _elementsConfig.EffectsDuration).OnComplete(() =>
         {
-            effectCompleteFlag = true;
             IsActive = true;
             IsInitialized = true;
         });
-
-        await UniTask.WaitUntil(() => effectCompleteFlag);
     }
 
     public async UniTask Disable()
     {
-        var effectCompleteFlag = false;
-        
-        transform.DOScale(effectSmallScale, _elementsConfig.EffectsDuration).OnComplete(() =>
+        await transform.DOScale(effectSmallScale, _elementsConfig.EffectsDuration).OnComplete(() =>
         {
-            effectCompleteFlag = true;
             IsActive = false;
             gameObject.SetActive(false);
         });
-
-        await UniTask.WaitUntil(() => effectCompleteFlag);
     }
 
     public void SetSelected(bool isOn)
